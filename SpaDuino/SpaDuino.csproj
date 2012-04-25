@@ -41,4 +41,10 @@
     <Reference Include="SecretLabs.NETMF.Hardware.NetduinoPlus" />
     <Reference Include="System" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleWeb\SimpleWeb.csproj">
+      <Project>{6476DA06-24D6-4A49-BFAB-D4801A5413AC}</Project>
+      <Name>SimpleWeb</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
