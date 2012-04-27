@@ -32,10 +32,13 @@
   <ItemGroup>
     <Compile Include="Controllers\IController.cs" />
     <Compile Include="Controllers\RelayController.cs" />
+    <Compile Include="DataLogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Sensors\ThermistorSensor.cs" />
+    <Compile Include="SpaConfig.cs" />
     <Compile Include="ThirdParty\Trigo.cs" />
+    <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SPOT.Hardware" />
@@ -44,6 +47,7 @@
     <Reference Include="SecretLabs.NETMF.Hardware" />
     <Reference Include="SecretLabs.NETMF.Hardware.NetduinoPlus" />
     <Reference Include="System" />
+    <Reference Include="System.IO" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SimpleWeb\SimpleWeb.csproj">
