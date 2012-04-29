@@ -48,11 +48,15 @@ namespace SpaDuino.Sensors
             if (Port != null)
             {
                 int adc = Port.Read();
-                float Resistance = ((1024 * BaseResistance / adc) - BaseResistance);
-                temp = Trigo.Log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
-                temp = 1 / (0.001129148 + (0.000234125 * temp) + (0.0000000876741 * temp * temp * temp));
-                temp -= 273.15;  // to Celsius
-                temp = (temp * 9.0) / 5.0 + 32.0; // to Fahrenheit
+
+                if (adc > 0)
+                {
+                    float Resistance = ((1024 * BaseResistance / adc) - BaseResistance);
+                    temp = Trigo.Log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
+                    temp = 1 / (0.001129148 + (0.000234125 * temp) + (0.0000000876741 * temp * temp * temp));
+                    temp -= 273.15;  // to Celsius
+                    temp = (temp * 9.0) / 5.0 + 32.0; // to Fahrenheit
+                }
             }
 
             return temp;

@@ -35,6 +35,7 @@ namespace SpaDuino.Controllers
             foreach (OutputPort port in Ports)
             {
                 port.Write(true);
+                State = true;
             }
         }
 
@@ -43,6 +44,7 @@ namespace SpaDuino.Controllers
             foreach (OutputPort port in Ports)
             {
                 port.Write(false);
+                State = false;
             }
         }
 
@@ -52,6 +54,7 @@ namespace SpaDuino.Controllers
             {
                 _toggle = (_toggle) ? false : true;
                 port.Write(_toggle);
+                State = _toggle;
             }
         }
 
@@ -59,6 +62,12 @@ namespace SpaDuino.Controllers
         {
             get;
             set;
+        }
+
+        public Boolean State
+        {
+            get;
+            private set;
         }
 
         private Boolean _toggle = false;

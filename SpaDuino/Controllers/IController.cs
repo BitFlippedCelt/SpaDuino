@@ -11,5 +11,6 @@ namespace SpaDuino.Controllers
         void Toggle();
 
         ArrayList Ports { get; set; }
+        Boolean State { get; }
     }
 }

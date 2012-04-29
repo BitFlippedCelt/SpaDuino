@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Microsoft.SPOT;
+using Microsoft.SPOT.Hardware;
 
 namespace SpaDuino
 {
@@ -8,6 +9,7 @@ namespace SpaDuino
     {
         public DataLogger(String filename)
         {
+            String dirPath = Path.GetDirectoryName(filename);
             if (Utility.CheckForDir(Path.GetDirectoryName(filename), true))
             {
                 _logFilename = filename;
@@ -24,9 +26,11 @@ namespace SpaDuino
             {
                 try
                 {
-                    using (StreamWriter sOut = new StreamWriter(_logFilename))
+                    using (var fs = new FileStream(_logFilename, FileMode.OpenOrCreate | FileMode.Append, FileAccess.Write, FileShare.Read, 512))
+                    using (StreamWriter sOut = new StreamWriter(fs))
                     {
-                        sOut.WriteLine(line);
+                        sOut.WriteLine(DateTime.Now + " - " + line);
+                        Debug.Print(DateTime.Now + " - " + line);
                     }
                 }
                 catch (IOException ex)
@@ -34,6 +38,11 @@ namespace SpaDuino
                     Debug.Print("WriteLine failed. " + ex.Message);
                 }
             }
+        }
+
+        public void WriteBreak()
+        {
+            WriteLine("***************************************************************");
         }
 
         private String _logFilename = null;

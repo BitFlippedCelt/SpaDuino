@@ -14,9 +14,13 @@ namespace SpaDuino
 {
     public class Program : IDisposable
     {
-        const String sdRoot = @"\SD\";
-        InterruptPort ShutdownButton;
-        Boolean Running = true;
+        const String SDROOT = @"\SD\";
+        const String TEMPERATURELOGFILE = @"temp.log";
+        const int TIMEZONEOFFSET = -8;
+        const int ITERATIONBEFORELOG = 30;
+
+        const double AMBIENTTRIGGER = 85.0; // Minimum temp in the ambient air before turning pump on
+        const double RETURNRISEMIN = 3.0; // Minimum difference to accept before shutting pump down
 
         public static void Main()
         {
@@ -47,45 +51,87 @@ namespace SpaDuino
 
         private void run()
         {
-            ShutdownButton = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptEdgeBoth);
-            ShutdownButton.OnInterrupt += new NativeEventHandler(ShutdownButton_OnInterrupt);
+            // Setup data logger
+            try
+            {
+                String logPath = Path.Combine(SDROOT, TEMPERATURELOGFILE);
+                if (File.Exists(logPath))
+                    File.Delete(logPath);
 
-            _webServer = new SimpleWeb.Server();
+                _dataLogger = new DataLogger(logPath);
+                _dataLogger.WriteBreak();
+            }
+            catch (IOException ex)
+            {
+                Debug.Print(ex.ToString());
+            }
+
+            // Set local time
+            try
+            {
+                //DateTime ntpTime = Utility.NTPTime("pool.ntp.org", TIMEZONEOFFSET);
+                //Microsoft.SPOT.Hardware.Utility.SetLocalTime(ntpTime);
+
+                //Debug.Print("Set netduino time to: " + ntpTime);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print("Failed to grab time from NTP server!");
+            }
+            
+
+            // Startup web server
+            //_webServer = new SimpleWeb.Server();
 
             // More test code
-            //Controllers.RelayController relay = new Controllers.RelayController();
-            //relay.Ports.Add(new OutputPort(Pins.GPIO_PIN_D0, false));
-            //relay.Activate();
+            Controllers.RelayController relay = new Controllers.RelayController();
+            relay.Ports.Add(new OutputPort(Pins.GPIO_PIN_D0, false));
 
             Sensors.ThermistorSensor therm1 = new Sensors.ThermistorSensor(Pins.GPIO_PIN_A0, 10000);
             Sensors.ThermistorSensor therm2 = new Sensors.ThermistorSensor(Pins.GPIO_PIN_A1, 10000);
             Sensors.ThermistorSensor therm3 = new Sensors.ThermistorSensor(Pins.GPIO_PIN_A2, 10000);
             
+            int iterationCounter = 0;
             while (Running)
             {
                 // Perform readings and send values to logger then analyzer
-                double reading1 = therm1.GetReading();
-                Debug.Print("S1: " + reading1);
+                double r1 = therm1.GetReading(); // Ambient
+                double r2 = therm2.GetReading(); // Coil intake
+                double r3 = therm3.GetReading(); // Coil return
+                //Debug.Print("S1: " + r1);
+                //Debug.Print("S2: " + r2);
+                //Debug.Print("S3: " + r3);
 
-                double reading2 = therm2.GetReading();
-                Debug.Print("S2: " + reading2);
+                // Very basic logic to control pump based on simple constraints defined at build
+                // This will migrate to the config, and have to have config file requeried for changes
+                // from time to time
+                if (!relay.State)
+                {
+                    if (r1 >= AMBIENTTRIGGER)
+                        relay.Activate();
+                }
+                else
+                {
+                    if (r3 <= (r2 + RETURNRISEMIN) || r1 < AMBIENTTRIGGER)
+                        relay.Deactivate();
+                }
 
-                double reading3 = therm3.GetReading();
-                Debug.Print("S3: " + reading3);
+
+                if (iterationCounter++ >= ITERATIONBEFORELOG)
+                {
+                    _dataLogger.WriteLine(r1 + ", " + r2 + ", " + r3);
+                    iterationCounter = 0;
+                }
 
                 Thread.Sleep(1000);
             }
 
-            //relay.Deactivate();
-            //relay.Dispose();
-            ShutdownButton.Dispose();
-        }
-
-        void ShutdownButton_OnInterrupt(uint data1, uint data2, DateTime time)
-        {
-            Running = false;
+            relay.Deactivate();
+            relay.Dispose();
         }
 
         SimpleWeb.Server _webServer;
+        DataLogger _dataLogger;
+        Boolean Running = true;
     }
 }
