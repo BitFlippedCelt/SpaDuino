@@ -89,7 +89,7 @@ namespace SpaDuino
             }
 
             // Startup web server
-            //_webServer = new SimpleWeb.Server();
+            _WebServer = new SimpleWeb.Server();
 
             // More test code
             Controllers.RelayController relay = new Controllers.RelayController();
@@ -99,7 +99,14 @@ namespace SpaDuino
             _SpaMonitorThread = new SpaMonitor(Pins.GPIO_PIN_A0, Pins.GPIO_PIN_A1, Pins.GPIO_PIN_A2);
             _SpaMonitorThread.StartMonitorThread();
 
+            while (_SpaMonitorThread.Running)
+            {
+                Debug.Print("Ambient: " + _SpaMonitorThread.AmbientTemp);
+                Debug.Print("Cold: " + _SpaMonitorThread.ColdTemp);
+                Debug.Print("Hot: " + _SpaMonitorThread.HotTemp);
 
+                Thread.Sleep(1000);
+            }
 
             relay.Deactivate();
             relay.Dispose();
