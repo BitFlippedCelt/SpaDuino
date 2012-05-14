@@ -7,19 +7,32 @@ using SecretLabs.NETMF.Hardware.NetduinoPlus;
 using System.Reflection;
 
 using netduino.helpers.Math;
+using System.Threading;
 
 namespace SpaDuino.Sensors
 {
     public class ThermistorSensor : IDisposable
     {
-        const float VREF = 3.3f;
-
-        public ThermistorSensor(Cpu.Pin inputPin, float baseResistance)
+        const int SAMPLECOUNT = 5;
+    
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="inputPin"></param>
+        /// <param name="tempNominal"></param>
+        /// <param name="thermistorNominal"></param>
+        /// <param name="beta"></param>
+        /// <param name="baseResistance"></param>
+        public ThermistorSensor(Cpu.Pin inputPin, float tempNominal = 25, float thermistorNominal = 10000, float beta = 3950, float baseResistance = 10000)
         {
-            Port = new AnalogInput(inputPin);
-            BaseResistance = baseResistance;
+            _Port = new AnalogInput(inputPin);
+            _TempNominal = tempNominal;
+            _ThermistorNominal = thermistorNominal;
+            _Beta = beta;
+            _BaseResistance = baseResistance;
         }
 
+        #region IDisposable
         public void Dispose()
         {
             Dispose(true);
@@ -35,34 +48,66 @@ namespace SpaDuino.Sensors
         {
             Dispose(false);
         }
+        #endregion
 
         /// <summary>
         /// Returns temp in Fahrenheit
-        /// Sourced this section from http://arduino.cc/playground/ComponentLib/Thermistor2
+        /// Using Steinhart-Hart Equation http://en.wikipedia.org/wiki/Steinhart%E2%80%93Hart_equation
         /// </summary>
         /// <returns></returns>
-        public double GetReading()
+        public float GetReading(Sensors.Types.TemperatureTypes tempType, int sampleCount = SAMPLECOUNT)
         {
-            double temp = 0.0;
-
-            if (Port != null)
+            if (_Port != null)
             {
-                int adc = Port.Read();
+                float average = 0.0f;
 
-                if (adc > 0)
+                // Capture sampleCount samples for average
+                for (int i = 0; i < sampleCount; i++)
                 {
-                    float Resistance = ((1024 * BaseResistance / adc) - BaseResistance);
-                    temp = Trigo.Log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
-                    temp = 1 / (0.001129148 + (0.000234125 * temp) + (0.0000000876741 * temp * temp * temp));
-                    temp -= 273.15;  // to Celsius
-                    temp = (temp * 9.0) / 5.0 + 32.0; // to Fahrenheit
+                    average += _Port.Read();
+                    
+                    Thread.Sleep(20); // Sleep before next iteration
+                }
+
+                // Get averaged value
+                average /= SAMPLECOUNT;
+
+                Debug.Print("Average reading from analog pin: " + average);
+
+                if (average > 0)
+                {
+                    // convert the value to resistance
+                    average = 1023 / average - 1;
+                    average = _BaseResistance / average;
+                    Debug.Print("Thermistor resistance: " + average);
+
+                    float steinhart = average / _ThermistorNominal;     // (R/Ro)
+                    steinhart = Trigo.Log(steinhart);                  // ln(R/Ro)
+                    steinhart /= _Beta;                   // 1/B * ln(R/Ro)
+                    steinhart += 1.0f / (_TempNominal + 273.15f); // + (1/To)
+                    steinhart = 1.0f / steinhart;                 // Invert
+
+                    switch (tempType)
+                    {
+                        case Types.TemperatureTypes.Kelvin:
+                            return steinhart;
+
+                        case Types.TemperatureTypes.Celsius:
+                            return steinhart - 273.15f;
+
+                        default:
+                            return ((steinhart - 273.15f) * 9.0f) / 5.0f + 32.0f;
+                    }
                 }
             }
 
-            return temp;
+            return 0.0f;
         }
 
-        public AnalogInput Port { get; protected set; }
-        public float BaseResistance { get; protected set; }
+        private readonly AnalogInput _Port;
+        private readonly float _TempNominal;
+        private readonly float _ThermistorNominal;
+        private readonly float _BaseResistance;
+        private readonly float _Beta;
     }
 }
