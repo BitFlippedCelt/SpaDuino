@@ -89,9 +89,9 @@ namespace SpaDuino
             while (true)
             {
                 // Perform readings and send values to logger then analyzer
-                AmbientTemp = _AmbientSensor.GetReading(Sensors.Types.TemperatureTypes.Fahrenheit); // Ambient
-                ColdTemp = _ColdSensor.GetReading(Sensors.Types.TemperatureTypes.Fahrenheit); // Coil intake
-                HotTemp = _HotSensor.GetReading(Sensors.Types.TemperatureTypes.Fahrenheit); // Coil return
+                AmbientTemp = _AmbientSensor.GetReading(Sensors.Types.TemperatureTypes.Celsius); // Ambient
+                ColdTemp = _ColdSensor.GetReading(Sensors.Types.TemperatureTypes.Celsius); // Coil intake
+                HotTemp = _HotSensor.GetReading(Sensors.Types.TemperatureTypes.Celsius); // Coil return
 
                 Debug.Print("AmbientTemp: " + AmbientTemp);
                 Debug.Print("Cold: " + ColdTemp);

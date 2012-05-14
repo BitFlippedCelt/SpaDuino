@@ -70,33 +70,26 @@ namespace SpaDuino.Sensors
                 }
 
                 // Get averaged value
-                average /= SAMPLECOUNT;
+                average /= sampleCount;
 
                 Debug.Print("Average reading from analog pin: " + average);
 
                 if (average > 0)
                 {
-                    // convert the value to resistance
-                    average = 1023 / average - 1;
-                    average = _BaseResistance / average;
-                    Debug.Print("Thermistor resistance: " + average);
-
-                    float steinhart = average / _ThermistorNominal;     // (R/Ro)
-                    steinhart = Trigo.Log(steinhart);                  // ln(R/Ro)
-                    steinhart /= _Beta;                   // 1/B * ln(R/Ro)
-                    steinhart += 1.0f / (_TempNominal + 273.15f); // + (1/To)
-                    steinhart = 1.0f / steinhart;                 // Invert
+                    float Resistance = ((1024 * _BaseResistance / average) - _BaseResistance);
+                    float temp = Trigo.Log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
+                    temp = 1 / (0.001129148f + (0.000234125f * temp) + (0.0000000876741f * temp * temp * temp));
 
                     switch (tempType)
                     {
                         case Types.TemperatureTypes.Kelvin:
-                            return steinhart;
+                            return temp;
 
                         case Types.TemperatureTypes.Celsius:
-                            return steinhart - 273.15f;
+                            return temp - 273.15f;
 
                         default:
-                            return ((steinhart - 273.15f) * 9.0f) / 5.0f + 32.0f;
+                            return ((temp - 273.15f) * 9.0f) / 5.0f + 32.0f;
                     }
                 }
             }
